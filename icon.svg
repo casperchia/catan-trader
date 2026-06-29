@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#6b4f2a"/>
+  <rect x="36" y="36" width="440" height="440" rx="64" fill="#e9d6ad"/>
+  <!-- top card: wheat (gold), rotated to suggest the flat-table flip -->
+  <g transform="translate(150 96) rotate(180 56 72)">
+    <rect width="112" height="144" rx="18" fill="#e0a128"/>
+    <rect x="48" y="44" width="16" height="78" rx="8" fill="#fff"/>
+    <path d="M56 18 C70 36 70 58 56 76 C42 58 42 36 56 18 Z" fill="#fff"/>
+  </g>
+  <!-- swap arrows -->
+  <g fill="#6b4f2a">
+    <path d="M196 238 L160 290 H184 V330 H208 V290 H232 Z"/>
+    <path d="M316 330 L352 278 H328 V238 H304 V278 H280 Z"/>
+  </g>
+  <!-- bottom card: forest (green) -->
+  <g transform="translate(250 272)">
+    <rect width="112" height="144" rx="18" fill="#2e7d32"/>
+    <path d="M56 26 L28 70 H44 L20 106 H44 L16 134 H96 L68 106 H92 L68 70 H84 Z" fill="#fff"/>
+  </g>
+</svg>

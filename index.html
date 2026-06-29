@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Catan Trader</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#6b4f2a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Catan Trader" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<style>
+  :root {
+    --parchment: #e9d6ad;
+    --parchment-deep: #ddc391;
+    --wood: #6b4f2a;
+    --wood-dark: #4e3a1e;
+    --ink: #3a2c16;
+    --pile-border: rgba(78, 58, 30, 0.45);
+    --ghost: rgba(78, 58, 30, 0.28);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; height: 100%; overflow: hidden;
+    background: var(--wood-dark);
+    font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+    color: var(--ink);
+    user-select: none; -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+  #board {
+    height: 100dvh; width: 100vw;
+    display: flex; flex-direction: column;
+  }
+
+  /* ---- halves ---- */
+  .half {
+    flex: 1 1 0; min-height: 0;
+    background:
+      radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18), transparent 60%),
+      var(--parchment);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; cursor: pointer; position: relative;
+  }
+  .half-top { transform: rotate(180deg); }
+  .half-inner {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: flex-start;
+    gap: 0; padding: 10px; overflow-x: auto; overflow-y: hidden;
+  }
+
+  /* ---- piles & OR dividers ---- */
+  .pile {
+    flex: 0 0 auto;
+    display: flex; flex-wrap: wrap; align-content: center; justify-content: center;
+    gap: 6px; padding: 10px;
+    border: 2.5px dashed var(--pile-border); border-radius: 14px;
+    background: rgba(255,255,255,0.22);
+    max-width: 46vw; min-width: 72px; min-height: 96px;
+  }
+  .vdivider {
+    flex: 0 0 auto;
+    width: 4px; align-self: stretch; margin: 14px 10px;
+    background: var(--wood); border-radius: 2px;
+  }
+
+  /* ---- resource card ---- */
+  .card {
+    flex: 0 0 auto;
+    width: clamp(50px, 16vw, 80px); height: clamp(62px, 20vw, 98px);
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: clamp(32px, 11vw, 52px); line-height: 1;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.28), inset 0 0 0 2px rgba(255,255,255,0.35);
+  }
+
+  /* ---- empty / add affordances ---- */
+  .hint {
+    flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ghost);
+  }
+  .hint svg { width: 48px; height: 48px; }
+  .hint.empty { flex: 1 1 auto; height: 100%; }
+  .hint.add { width: 72px; min-height: 96px; opacity: 0.7; }
+
+  /* ---- center divider bar ---- */
+  .divider {
+    flex: 0 0 auto; height: 64px;
+    background: linear-gradient(var(--wood), var(--wood-dark));
+    display: flex; align-items: center; justify-content: center; position: relative;
+    box-shadow: 0 0 12px rgba(0,0,0,0.45);
+  }
+  .swap {
+    width: 46px; height: 46px; color: var(--parchment);
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.4));
+  }
+  .clear-btn {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    width: 46px; height: 46px; border-radius: 50%;
+    border: none; background: rgba(0,0,0,0.22); color: var(--parchment);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .clear-btn svg { width: 24px; height: 24px; }
+  .clear-btn:active { background: rgba(0,0,0,0.4); transform: translateY(-50%) scale(0.92); }
+
+  /* ---- picker overlay ---- */
+  .overlay {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(20,12,4,0.55);
+    display: none; align-items: center; justify-content: center;
+    backdrop-filter: blur(2px);
+  }
+  .overlay.show { display: flex; }
+  .picker {
+    background: var(--parchment-deep);
+    border: 3px solid var(--wood); border-radius: 20px;
+    padding: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    width: min(92vw, 380px);
+  }
+  .tile {
+    position: relative; aspect-ratio: 3 / 4;
+    border-radius: 12px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.3), inset 0 0 0 2px rgba(255,255,255,0.35);
+    transition: transform 0.06s ease;
+  }
+  .tile:active { transform: scale(0.94); }
+  .tile .emoji { font-size: clamp(34px, 12vw, 54px); line-height: 1; }
+  .badge {
+    position: absolute; top: -8px; right: -8px;
+    min-width: 28px; height: 28px; padding: 0 6px;
+    border-radius: 14px; background: var(--ink); color: #fff;
+    font-weight: bold; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+  }
+  .badge.zero { display: none; }
+  .minus {
+    position: absolute; bottom: -8px; left: -8px;
+    width: 30px; height: 30px; border-radius: 50%;
+    border: none; background: #b03030; color: #fff;
+    font-size: 22px; line-height: 1; font-weight: bold;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+  }
+  .minus.hide { display: none; }
+  .minus:active { transform: scale(0.88); }
+</style>
+</head>
+<body>
+<div id="board"></div>
+<div class="overlay" id="overlay"><div class="picker" id="picker"></div></div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   Resource catalog (static data) — white SVG silhouettes
+   ============================================================ */
+const EMOJI = {
+  wood:  '🌲',
+  brick: '🧱',
+  sheep: '🐑',
+  wheat: '🌾',
+  ore:   '🪨',
+  wild:  '❓'
+};
+const RESOURCES = [
+  { id: 'wood',  color: '#2e7d32' },
+  { id: 'brick', color: '#bf552d' },
+  { id: 'sheep', color: '#7cb342' },
+  { id: 'wheat', color: '#e0a128' },
+  { id: 'ore',   color: '#6d7f8c' },
+  { id: 'wild',  color: '#7e57c2' }
+];
+const RES = Object.fromEntries(RESOURCES.map(r => [r.id, r]));
+
+/* ============================================================
+   Trade model (deep, pure, no DOM)
+   state.give / state.want = ordered list of piles
+   pile = { resourceId: count }
+   ============================================================ */
+const state = { give: [], want: [] };
+const Model = {
+  addResource(side, i, rid) {
+    const p = state[side][i]; if (!p) return;
+    p[rid] = (p[rid] || 0) + 1;
+  },
+  decrementResource(side, i, rid) {
+    const p = state[side][i]; if (!p || !p[rid]) return;
+    p[rid]--; if (p[rid] <= 0) delete p[rid];
+  },
+  addPile(side) { state[side].push({}); return state[side].length - 1; },
+  removePile(side, i) { state[side].splice(i, 1); },
+  countIn(side, i, rid) { const p = state[side][i]; return (p && p[rid]) || 0; },
+  isPileEmpty(side, i) { const p = state[side][i]; return !p || Object.keys(p).length === 0; },
+  clearTrade() { state.give = []; state.want = []; }
+};
+
+/* ============================================================
+   Small DOM helpers
+   ============================================================ */
+function el(tag, cls, html) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (html != null) e.innerHTML = html;
+  return e;
+}
+function buzz() { if (navigator.vibrate) navigator.vibrate(8); }
+
+const PLUS = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="10.5" y="4" width="3" height="16" rx="1.5"/><rect x="4" y="10.5" width="16" height="3" rx="1.5"/></svg>';
+const SWAP = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 2 L4 7 H7 V17 H9 V7 H12 Z"/><path d="M16 22 L20 17 H17 V7 H15 V17 H12 Z"/></svg>';
+const TRASH = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 3 H15 V5 H20 V7 H4 V5 H9 Z"/><path d="M6 8 H18 L17 21 H7 Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+
+/* ============================================================
+   Renderer (DOM)  — top half = "want" (rotated), bottom = "give"
+   ============================================================ */
+const board = document.getElementById('board');
+
+function card(r) {
+  const c = el('div', 'card');
+  c.textContent = EMOJI[r.id];
+  c.style.background = 'linear-gradient(160deg, ' + r.color + ', ' + shade(r.color) + ')';
+  return c;
+}
+function shade(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.max(0, (n >> 16 & 255) - 40),
+        g = Math.max(0, (n >> 8 & 255) - 40),
+        b = Math.max(0, (n & 255) - 40);
+  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+function renderPile(side, i) {
+  const pile = state[side][i];
+  const box = el('div', 'pile');
+  box.dataset.idx = i;
+  for (const rid of Object.keys(pile)) {
+    for (let n = 0; n < pile[rid]; n++) box.appendChild(card(RES[rid]));
+  }
+  return box;
+}
+
+function renderSide(side) {
+  const half = el('div', 'half');
+  const inner = el('div', 'half-inner');
+  const piles = state[side];
+  if (piles.length === 0) {
+    inner.appendChild(el('div', 'hint empty', PLUS));
+  } else {
+    piles.forEach((p, i) => {
+      if (i > 0) inner.appendChild(el('div', 'vdivider'));
+      inner.appendChild(renderPile(side, i));
+    });
+    inner.appendChild(el('div', 'hint add', PLUS));
+  }
+  half.appendChild(inner);
+  half.addEventListener('click', (e) => {
+    const pileEl = e.target.closest('.pile');
+    if (pileEl) {
+      openPicker(side, +pileEl.dataset.idx);
+    } else {
+      const idx = Model.addPile(side);
+      render();
+      openPicker(side, idx);
+    }
+    buzz();
+  });
+  return half;
+}
+
+function renderDivider() {
+  const d = el('div', 'divider');
+  d.appendChild(el('div', 'swap', SWAP));
+  const clear = el('button', 'clear-btn', TRASH);
+  clear.title = 'Clear';
+  clear.addEventListener('click', (e) => {
+    e.stopPropagation();
+    Model.clearTrade();
+    render();
+    buzz();
+  });
+  d.appendChild(clear);
+  return d;
+}
+
+function render() {
+  board.innerHTML = '';
+  const top = renderSide('want'); top.classList.add('half-top');
+  const bottom = renderSide('give'); bottom.classList.add('half-bottom');
+  board.append(top, renderDivider(), bottom);
+}
+
+/* ============================================================
+   Picker controller (DOM + model) — centered, always upright
+   ============================================================ */
+const overlay = document.getElementById('overlay');
+const pickerEl = document.getElementById('picker');
+const picker = { side: null, idx: -1 };
+
+function openPicker(side, idx) {
+  picker.side = side; picker.idx = idx;
+  renderPicker();
+  overlay.classList.add('show');
+}
+
+function closePicker() {
+  if (picker.side != null && Model.isPileEmpty(picker.side, picker.idx)) {
+    Model.removePile(picker.side, picker.idx);
+  }
+  overlay.classList.remove('show');
+  picker.side = null; picker.idx = -1;
+  render();
+}
+
+function renderPicker() {
+  pickerEl.innerHTML = '';
+  RESOURCES.forEach((r) => {
+    const tile = el('div', 'tile', '<span class="emoji">' + EMOJI[r.id] + '</span>');
+    tile.style.background = 'linear-gradient(160deg, ' + r.color + ', ' + shade(r.color) + ')';
+    const count = Model.countIn(picker.side, picker.idx, r.id);
+
+    const badge = el('div', 'badge' + (count === 0 ? ' zero' : ''), String(count));
+    tile.appendChild(badge);
+
+    const minus = el('button', 'minus' + (count === 0 ? ' hide' : ''), '−');
+    minus.addEventListener('click', (e) => {
+      e.stopPropagation();
+      Model.decrementResource(picker.side, picker.idx, r.id);
+      renderPicker(); render(); buzz();
+    });
+    tile.appendChild(minus);
+
+    tile.addEventListener('click', () => {
+      Model.addResource(picker.side, picker.idx, r.id);
+      renderPicker(); render(); buzz();
+    });
+    pickerEl.appendChild(tile);
+  });
+}
+
+overlay.addEventListener('click', (e) => { if (e.target === overlay) closePicker(); });
+
+/* ============================================================
+   App shell — wake lock, service worker, boot
+   ============================================================ */
+let wakeLock = null;
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+  } catch (_) { /* ignore */ }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') requestWakeLock();
+});
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(() => {});
+  });
+}
+
+render();
+requestWakeLock();
+</script>
+</body>
+</html>

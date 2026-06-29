@@ -1,0 +1,10 @@
+# Local Claude Code / preview tooling
+.claude/
+
+# JetBrains IDE
+.idea/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+node_modules/
