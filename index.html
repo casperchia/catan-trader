@@ -46,9 +46,12 @@
   .half-top { transform: rotate(180deg); }
   .half-inner {
     width: 100%; height: 100%;
-    display: flex; align-items: center; justify-content: flex-start;
+    display: flex; align-items: center;
     gap: 0; padding: 10px; overflow-x: auto; overflow-y: hidden;
   }
+  /* margin:auto centers the group; collapses to 0 on overflow so wide
+     trades scroll from the start instead of clipping the left edge */
+  .row { display: flex; align-items: center; margin: auto; }
 
   /* ---- piles & OR dividers ---- */
   .pile {
@@ -247,16 +250,18 @@ function renderPile(side, i) {
 function renderSide(side) {
   const half = el('div', 'half');
   const inner = el('div', 'half-inner');
+  const row = el('div', 'row');
   const piles = state[side];
   if (piles.length === 0) {
-    inner.appendChild(el('div', 'hint empty', PLUS));
+    row.appendChild(el('div', 'hint empty', PLUS));
   } else {
     piles.forEach((p, i) => {
-      if (i > 0) inner.appendChild(el('div', 'vdivider'));
-      inner.appendChild(renderPile(side, i));
+      if (i > 0) row.appendChild(el('div', 'vdivider'));
+      row.appendChild(renderPile(side, i));
     });
-    inner.appendChild(el('div', 'hint add', PLUS));
+    row.appendChild(el('div', 'hint add', PLUS));
   }
+  inner.appendChild(row);
   half.appendChild(inner);
   half.addEventListener('click', (e) => {
     const pileEl = e.target.closest('.pile');
