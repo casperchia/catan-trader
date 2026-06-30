@@ -1,4 +1,4 @@
-const CACHE = 'catan-trader-v2';
+const CACHE = 'catan-trader-v3';
 const ASSETS = [
   './',
   './index.html',
